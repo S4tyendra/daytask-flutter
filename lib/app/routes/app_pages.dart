@@ -24,6 +24,8 @@ import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
 import '../modules/task_details/bindings/task_details_binding.dart';
 import '../modules/task_details/views/task_details_view.dart';
+import '../modules/task_list/bindings/task_list_binding.dart';
+import '../modules/task_list/views/task_list_view.dart';
 
 part 'app_routes.dart';
 
@@ -92,6 +94,11 @@ class AppPages {
       name: _Paths.DASHBOARD,
       page: () => const DashboardView(),
       binding: DashboardBinding(),
+    ),
+    GetPage(
+      name: _Paths.TASK_LIST,
+      page: () => const TaskListView(),
+      binding: TaskListBinding(),
     ),
   ];
 }

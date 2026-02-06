@@ -80,7 +80,7 @@ class HomeView extends GetView<HomeController> {
             backgroundColor: Get.theme.colorScheme.primary,
             elevation: 0,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.all(Radius.circular(10)),
             ),
             child: Icon(Icons.add, color: Get.theme.colorScheme.onPrimary),
           ),
@@ -100,7 +100,7 @@ class HomeView extends GetView<HomeController> {
             icon: Icon(Icons.add),
             selectedIcon: Icon(Icons.add),
             label: Text('Add'),
-            disabled: true,
+            // disabled: true,
           ),
           NavigationRailDestination(
             icon: Icon(Icons.calendar_today_outlined),

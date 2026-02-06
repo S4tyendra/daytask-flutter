@@ -1,3 +1,9 @@
+import 'package:day_task/app/modules/chat/views/chat_view.dart';
+import 'package:day_task/app/modules/dashboard/views/dashboard_view.dart';
+import 'package:day_task/app/modules/new_task/views/new_task_view.dart';
+import 'package:day_task/app/modules/notifications/views/notifications_view.dart';
+import 'package:day_task/app/modules/profile/views/profile_view.dart';
+import 'package:day_task/app/modules/schedule/views/schedule_view.dart';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
@@ -31,17 +37,17 @@ class HomeView extends GetView<HomeController> {
     return Obx(() {
       switch (controller.selectedIndex.value) {
         case 0:
-          return const Center(child: Text("Home Page"));
+          return DashboardView();
         case 1:
-          return const Center(child: Text("Chat Page"));
+          return ChatView();
         case 2:
-          return const Center(child: Text("Add Task Page"));
+          return NewTaskView();
         case 3:
-          return const Center(child: Text("Calendar Page"));
+          return ScheduleView();
         case 4:
-          return const Center(child: Text("Notification Page"));
+          return NotificationsView();
         default:
-          return const Center(child: Text("Home Page"));
+          return ProfileView();
       }
     });
   }

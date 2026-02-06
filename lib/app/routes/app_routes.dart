@@ -14,6 +14,7 @@ abstract class Routes {
   static const NEW_TASK = _Paths.NEW_TASK;
   static const NOTIFICATIONS = _Paths.NOTIFICATIONS;
   static const PROFILE = _Paths.PROFILE;
+  static const DASHBOARD = _Paths.DASHBOARD;
 }
 
 abstract class _Paths {
@@ -29,4 +30,5 @@ abstract class _Paths {
   static const NEW_TASK = '/new-task';
   static const NOTIFICATIONS = '/notifications';
   static const PROFILE = '/profile';
+  static const DASHBOARD = '/dashboard';
 }

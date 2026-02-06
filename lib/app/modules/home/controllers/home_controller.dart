@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
+import 'package:day_task/app/services/supabase_service.dart';
+import 'package:day_task/app/routes/app_pages.dart';
 
 class HomeController extends GetxController {
-  //TODO: Implement HomeController
-
   final count = 0.obs;
   @override
   void onInit() {
@@ -19,5 +19,8 @@ class HomeController extends GetxController {
     super.onClose();
   }
 
-  void increment() => count.value++;
+  Future<void> signOut() async {
+    await Get.find<SupabaseService>().signOut();
+    Get.offAllNamed(Routes.SIGNIN);
+  }
 }

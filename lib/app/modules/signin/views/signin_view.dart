@@ -125,16 +125,23 @@ class SigninView extends GetView<SigninController> {
                 height: 55,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.white),
+                    side: BorderSide(
+                      color: Get.isDarkMode
+                          ? Get.theme.primaryColorLight
+                          : Get.theme.primaryColorDark,
+                    ),
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
                     ),
-                    foregroundColor: Colors.white,
+                    foregroundColor: Get.isDarkMode
+                        ? Get.theme.primaryColorLight
+                        : Get.theme.primaryColorDark,
                   ),
                   onPressed: controller.googleLogin,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.g_mobiledata,
                     size: 30,
+                    color: Get.theme.primaryColorDark,
                   ), // Replace with Google Logo asset if available
                   label: const Text(
                     "Google",

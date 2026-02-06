@@ -24,8 +24,29 @@ class SupabaseService extends GetxService {
 
       // Monitor auth state changes
       client.auth.onAuthStateChange.listen((data) {
-        final session = data.session;
-        log(session?.user.toString() ?? "No Access Token");
+        log("Auth Event: ${data.toString()}");
+        final AuthChangeEvent event = data.event;
+        final Session? session = data.session;
+
+        log("Auth Event: ${event.name}");
+
+        if (event == AuthChangeEvent.signedIn ||
+            event == AuthChangeEvent.initialSession) {
+          if (session != null) {
+            log("User logged in: ${session.user.email}");
+            if (Get.currentRoute != '/home') {
+              Get.offAllNamed('/home');
+            }
+          }
+        } else if (event == AuthChangeEvent.signedOut) {
+          log("User logged out");
+          // Only navigate to signin if we're not already on an auth/splash page
+          if (Get.currentRoute != '/signin' &&
+              Get.currentRoute != '/signup' &&
+              Get.currentRoute != '/splash') {
+            Get.offAllNamed('/signin');
+          }
+        }
       });
     } catch (e) {
       log("Supabase Init Error: ${e.toString()}");

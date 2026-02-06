@@ -42,7 +42,10 @@ class MyApp extends StatelessWidget {
         colorScheme: const ColorScheme.light(
           primary: AppColors.primaryYellow,
           secondary: AppColors.darkBackground,
+          onSecondary: Colors.white,
           surface: Colors.white,
+          onSurface: AppColors.darkText,
+          onSurfaceVariant: AppColors.greyText,
           onPrimary: AppColors.darkText,
         ),
 
@@ -97,7 +100,11 @@ class MyApp extends StatelessWidget {
         // Color Scheme
         colorScheme: const ColorScheme.dark(
           primary: AppColors.primaryYellow,
+          secondary: AppColors.darkBackground,
+          onSecondary: Colors.white,
           surface: AppColors.darkSurface,
+          onSurface: Colors.white,
+          onSurfaceVariant: AppColors.greyText,
           onPrimary: AppColors.darkText,
         ),
 

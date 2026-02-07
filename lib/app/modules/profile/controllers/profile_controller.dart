@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/task_model.dart';
@@ -21,7 +22,9 @@ class ProfileController extends GetxController {
   void onInit() {
     super.onInit();
     isDarkMode.value = _box.read('isDarkMode') ?? true;
-    _updateTheme();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateTheme();
+    });
     loadProfile();
     loadMyTasks();
   }

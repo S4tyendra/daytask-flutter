@@ -35,20 +35,48 @@ class HomeView extends GetView<HomeController> {
 
   Widget _buildBody() {
     return Obx(() {
+      Widget currentView;
       switch (controller.selectedIndex.value) {
         case 0:
-          return DashboardView();
+          currentView = DashboardView();
+          break;
         case 1:
-          return ChatView();
+          currentView = ChatView();
+          break;
         case 2:
-          return NewTaskView();
+          currentView = NewTaskView();
+          break;
         case 3:
-          return ScheduleView();
+          currentView = ScheduleView();
+          break;
         case 4:
-          return NotificationsView();
+          currentView = NotificationsView();
+          break;
         default:
-          return ProfileView();
+          currentView = ProfileView();
       }
+
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.02, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(controller.selectedIndex.value),
+          child: currentView,
+        ),
+      );
     });
   }
 
@@ -183,22 +211,37 @@ class HomeView extends GetView<HomeController> {
     return Expanded(
       child: InkWell(
         onTap: () => controller.changeIndex(index),
-        child: SizedBox(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
           height: 64,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(isSelected ? activeIcon : icon, color: color, size: 24),
+              AnimatedScale(
+                scale: isSelected ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  color: color,
+                  size: 24,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(
-                label,
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
                 style: TextStyle(
                   color: color,
                   fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -208,20 +251,43 @@ class HomeView extends GetView<HomeController> {
   }
 
   Widget _buildAddButton() {
+    final isSelected = controller.selectedIndex.value == 2;
+
     return InkWell(
       onTap: () => controller.changeIndex(2),
-      child: Container(
-        width: 48,
-        height: 48,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: Get.theme.colorScheme.primary,
-          borderRadius: BorderRadius.zero,
-        ),
-        child: Icon(
-          Icons.add,
-          color: Get.theme.colorScheme.onPrimary,
-          size: 28,
+      child: AnimatedScale(
+        scale: isSelected ? 1.15 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutBack,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          width: 48,
+          height: 48,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: Get.theme.colorScheme.primary,
+            borderRadius: BorderRadius.zero,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Get.theme.colorScheme.primary.withOpacity(0.4),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : [],
+          ),
+          child: AnimatedRotation(
+            turns: isSelected ? 0.125 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: Icon(
+              Icons.add,
+              color: Get.theme.colorScheme.onPrimary,
+              size: 28,
+            ),
+          ),
         ),
       ),
     );

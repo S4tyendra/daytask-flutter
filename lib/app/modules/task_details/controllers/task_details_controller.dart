@@ -425,60 +425,70 @@ class TaskDetailsController extends GetxController {
   }
 
   Widget _buildMemberSelectionDialog(List<ProfileModel> users) {
-    final selectedUsers = <ProfileModel>[].obs;
+    final selectedUsers = <ProfileModel>[];
 
-    return AlertDialog(
-      backgroundColor: const Color(0xFF2C3E50),
-      title: const Text('Add Members', style: TextStyle(color: Colors.white)),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 400,
-        child: Obx(
-          () => ListView.builder(
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              final isSelected = selectedUsers.contains(user);
-
-              return CheckboxListTile(
-                value: isSelected,
-                onChanged: (value) {
-                  if (value == true) {
-                    selectedUsers.add(user);
-                  } else {
-                    selectedUsers.remove(user);
-                  }
-                },
-                title: Text(
-                  user.displayName,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                secondary: CircleAvatar(
-                  backgroundColor: const Color(0xFFFFC107),
-                  backgroundImage: user.avatarUrl != null
-                      ? NetworkImage(user.avatarUrl!)
-                      : null,
-                  child: user.avatarUrl == null
-                      ? Text(
-                          user.initials,
-                          style: const TextStyle(color: Colors.black),
-                        )
-                      : null,
-                ),
-                activeColor: const Color(0xFFFFC107),
-                checkColor: Colors.black,
-              );
-            },
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2C3E50),
+          title: const Text(
+            'Add Members',
+            style: TextStyle(color: Colors.white),
           ),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-        TextButton(
-          onPressed: () => Get.back(result: selectedUsers.toList()),
-          child: const Text('Add'),
-        ),
-      ],
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: ListView.builder(
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                final isSelected = selectedUsers.contains(user);
+
+                return CheckboxListTile(
+                  value: isSelected,
+                  onChanged: (value) {
+                    setState(() {
+                      if (value == true) {
+                        selectedUsers.add(user);
+                      } else {
+                        selectedUsers.remove(user);
+                      }
+                    });
+                  },
+                  title: Text(
+                    user.displayName,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  secondary: CircleAvatar(
+                    backgroundColor: const Color(0xFFFFC107),
+                    backgroundImage: user.avatarUrl != null
+                        ? NetworkImage(user.avatarUrl!)
+                        : null,
+                    child: user.avatarUrl == null
+                        ? Text(
+                            user.initials,
+                            style: const TextStyle(color: Colors.black),
+                          )
+                        : null,
+                  ),
+                  activeColor: const Color(0xFFFFC107),
+                  checkColor: Colors.black,
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: selectedUsers),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 

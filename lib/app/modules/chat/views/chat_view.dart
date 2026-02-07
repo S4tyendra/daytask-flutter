@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import '../controllers/chat_controller.dart';
 
 class ChatView extends GetView<ChatController> {
@@ -13,232 +12,379 @@ class ChatView extends GetView<ChatController> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF2C3E50),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Get.back(),
+        title: const Text(
+          'Messages',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        title: Obx(() {
-          final task = controller.currentTask.value;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                controller.taskTitle ?? 'Chat',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (task != null && task.members.isNotEmpty)
-                Text(
-                  '${task.members.length} members',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
-                  ),
-                ),
-            ],
-          );
-        }),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.videocam, color: Colors.white),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.call, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
+        bottom: TabBar(
+          controller: controller.tabController,
+          indicatorColor: const Color(0xFFFFC107),
+          labelColor: const Color(0xFFFFC107),
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(text: 'Direct'),
+            Tab(text: 'Groups'),
+          ],
+        ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Color(0xFFFFC107)),
-                );
-              }
+      body: TabBarView(
+        controller: controller.tabController,
+        children: [_buildDirectMessagesTab(), _buildGroupsTab()],
+      ),
+      floatingActionButton: Obx(() {
+        if (controller.currentTab.value == 0) {
+          return FloatingActionButton(
+            backgroundColor: const Color(0xFFFFC107),
+            onPressed: () {
+              controller.showAddDirectMessageDialog();
+              _showUserSelectionSheet();
+            },
+            child: const Icon(Icons.add, color: Colors.black),
+          );
+        }
+        return const SizedBox.shrink();
+      }),
+    );
+  }
 
-              if (controller.messages.isEmpty) {
-                return Center(
-                  child: Text(
-                    'No messages yet.\nStart the conversation!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 16,
-                    ),
+  void _showUserSelectionSheet() {
+    Get.bottomSheet(
+      Container(
+        height: Get.height * 0.7,
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Color(0xFF2C3E50),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Start a conversation',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              }
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Get.back(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: GetBuilder<ChatController>(
+                builder: (controller) {
+                  if (controller.allUsers.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No users found',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    );
+                  }
 
-              return ListView.builder(
-                controller: controller.scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.messages.length,
-                itemBuilder: (context, index) {
-                  final message = controller.messages[index];
-                  final isMyMessage = controller.isMyMessage(message);
-                  final showDate =
-                      index == 0 ||
-                      !_isSameDay(
-                        controller.messages[index - 1].createdAt,
-                        message.createdAt,
+                  return ListView.builder(
+                    itemCount: controller.allUsers.length,
+                    itemBuilder: (context, index) {
+                      final user = controller.allUsers[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFFFFC107),
+                          backgroundImage: user.avatarUrl != null
+                              ? NetworkImage(user.avatarUrl!)
+                              : null,
+                          child: user.avatarUrl == null
+                              ? Text(
+                                  user.initials,
+                                  style: const TextStyle(color: Colors.black),
+                                )
+                              : null,
+                        ),
+                        title: Text(
+                          user.displayName,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        onTap: () {
+                          Get.back();
+                          controller.openDirectMessage(user);
+                        },
                       );
-
-                  return Column(
-                    children: [
-                      if (showDate) _buildDateDivider(message.createdAt),
-                      _buildMessageBubble(message, isMyMessage),
-                    ],
+                    },
                   );
                 },
-              );
-            }),
+              ),
+            ),
+          ],
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildDirectMessagesTab() {
+    return Obx(() {
+      if (controller.isLoadingUsers.value) {
+        return const Center(
+          child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+        );
+      }
+
+      if (controller.directMessageUsers.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 80,
+                color: Colors.white.withOpacity(0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No conversations yet',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap + to start a conversation',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
-          _buildMessageInput(),
-        ],
-      ),
-    );
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: controller.directMessageUsers.length,
+        itemBuilder: (context, index) {
+          final user = controller.directMessageUsers[index];
+          return _buildDirectMessageCard(user);
+        },
+      );
+    });
   }
 
-  Widget _buildDateDivider(DateTime date) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        _formatDate(date),
-        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-      ),
-    );
-  }
-
-  Widget _buildMessageBubble(message, bool isMyMessage) {
-    return Align(
-      alignment: isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        constraints: BoxConstraints(maxWidth: Get.width * 0.75),
-        child: Column(
-          crossAxisAlignment: isMyMessage
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            if (!isMyMessage && message.sender != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 12, bottom: 4),
-                child: Text(
-                  message.sender!.displayName,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isMyMessage
-                    ? const Color(0xFFFFC107)
-                    : const Color(0xFF34495E),
-                borderRadius: BorderRadius.circular(0),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      color: isMyMessage ? Colors.black : Colors.white,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatTime(message.createdAt),
-                    style: TextStyle(
-                      color: isMyMessage
-                          ? Colors.black.withOpacity(0.6)
-                          : Colors.white.withOpacity(0.6),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMessageInput() {
+  Widget _buildDirectMessageCard(user) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(color: Color(0xFF34495E)),
-      child: SafeArea(
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.grid_view, color: Color(0xFFFFC107)),
-              onPressed: () {},
-            ),
-            Expanded(
-              child: TextField(
-                controller: controller.messageController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Type a message',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: const Color(0xFF34495E),
+        borderRadius: BorderRadius.circular(0),
+        child: InkWell(
+          onTap: () => controller.openDirectMessage(user),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: const Color(0xFFFFC107),
+                  backgroundImage: user.avatarUrl != null
+                      ? NetworkImage(user.avatarUrl!)
+                      : null,
+                  child: user.avatarUrl == null
+                      ? Text(
+                          user.initials,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        )
+                      : null,
                 ),
-                onSubmitted: (_) => controller.sendMessage(),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.mic, color: Colors.white),
-              onPressed: () {},
-            ),
-            Obx(() {
-              return IconButton(
-                icon: Icon(
-                  Icons.send,
-                  color: controller.isSending.value
-                      ? Colors.grey
-                      : const Color(0xFFFFC107),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.displayName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to chat',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: controller.isSending.value
-                    ? null
-                    : controller.sendMessage,
-              );
-            }),
-          ],
+                const Icon(Icons.chevron_right, color: Color(0xFFFFC107)),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  bool _isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
+  Widget _buildGroupsTab() {
+    return Obx(() {
+      if (controller.isLoadingGroups.value) {
+        return const Center(
+          child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+        );
+      }
+
+      if (controller.taskGroups.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.group_outlined,
+                size: 80,
+                color: Colors.white.withOpacity(0.3),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No group chats yet',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Create a task to start a group chat',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: controller.taskGroups.length,
+        itemBuilder: (context, index) {
+          final task = controller.taskGroups[index];
+          return _buildGroupCard(task);
+        },
+      );
+    });
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    if (_isSameDay(date, now)) {
-      return 'Today';
-    } else if (_isSameDay(date, now.subtract(const Duration(days: 1)))) {
-      return 'Yesterday';
-    } else {
-      return DateFormat('MMMM d, y').format(date);
-    }
-  }
-
-  String _formatTime(DateTime time) {
-    return DateFormat('HH:mm').format(time);
+  Widget _buildGroupCard(task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: const Color(0xFF34495E),
+        borderRadius: BorderRadius.circular(0),
+        child: InkWell(
+          onTap: () => controller.openTaskChat(task),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFC107),
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  child: const Icon(Icons.group, color: Colors.black, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.people,
+                            size: 14,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${task.members.length} members',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: task.status == 'completed'
+                                  ? Colors.green.withOpacity(0.2)
+                                  : const Color(0xFFFFC107).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              task.status == 'completed'
+                                  ? 'Completed'
+                                  : 'Active',
+                              style: TextStyle(
+                                color: task.status == 'completed'
+                                    ? Colors.green
+                                    : const Color(0xFFFFC107),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Color(0xFFFFC107)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

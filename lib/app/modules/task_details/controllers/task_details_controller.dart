@@ -261,6 +261,227 @@ class TaskDetailsController extends GetxController {
     );
   }
 
+  Future<void> deleteTask() async {
+    try {
+      final confirm = await Get.dialog<bool>(
+        AlertDialog(
+          backgroundColor: const Color(0xFF2C3E50),
+          title: const Text(
+            'Delete Task',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'Are you sure you want to delete this task? This action cannot be undone.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      await _client.from('tasks').delete().eq('id', taskId!);
+      Get.back(); // Return to previous screen
+      Get.snackbar('Success', 'Task deleted successfully');
+    } catch (e) {
+      log('Error deleting task: $e');
+      Get.snackbar('Error', 'Failed to delete task');
+    }
+  }
+
+  Future<void> updateDueDate() async {
+    final selectedDate = await showDatePicker(
+      context: Get.context!,
+      initialDate: task.value?.dueDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFFFC107),
+              surface: Color(0xFF2C3E50),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (selectedDate == null) return;
+
+    final selectedTime = await showTimePicker(
+      context: Get.context!,
+      initialTime: TimeOfDay.fromDateTime(
+        task.value?.dueDate ?? DateTime.now(),
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFFFFC107),
+              surface: Color(0xFF2C3E50),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (selectedTime == null) return;
+
+    final newDueDate = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      selectedTime.hour,
+      selectedTime.minute,
+    );
+
+    try {
+      await _client
+          .from('tasks')
+          .update({'due_date': newDueDate.toIso8601String()})
+          .eq('id', taskId!);
+
+      if (task.value != null) {
+        task.value = TaskModel(
+          id: task.value!.id,
+          userId: task.value!.userId,
+          title: task.value!.title,
+          description: task.value!.description,
+          status: task.value!.status,
+          dueDate: newDueDate,
+          progress: task.value!.progress,
+          createdAt: task.value!.createdAt,
+          updatedAt: DateTime.now(),
+          members: task.value!.members,
+        );
+      }
+
+      Get.snackbar('Success', 'Due date updated successfully');
+    } catch (e) {
+      log('Error updating due date: $e');
+      Get.snackbar('Error', 'Failed to update due date');
+    }
+  }
+
+  Future<void> showAddMembersDialog() async {
+    try {
+      // Load all users
+      final response = await _client
+          .from('profiles')
+          .select()
+          .order('full_name', ascending: true);
+
+      final allUsers = (response as List)
+          .map((json) => ProfileModel.fromJson(json))
+          .toList();
+
+      // Filter out existing members
+      final existingMemberIds =
+          task.value?.members.map((m) => m.id).toSet() ?? {};
+      final availableUsers = allUsers
+          .where((u) => !existingMemberIds.contains(u.id))
+          .toList();
+
+      if (availableUsers.isEmpty) {
+        Get.snackbar('Info', 'All users are already members');
+        return;
+      }
+
+      // Show selection dialog
+      final selectedUsers = await Get.dialog<List<ProfileModel>>(
+        _buildMemberSelectionDialog(availableUsers),
+      );
+
+      if (selectedUsers == null || selectedUsers.isEmpty) return;
+
+      // Add members to task
+      for (var user in selectedUsers) {
+        await _client.from('task_members').insert({
+          'task_id': taskId,
+          'user_id': user.id,
+        });
+      }
+
+      // Reload task details
+      await loadTaskDetails();
+      Get.snackbar('Success', '${selectedUsers.length} member(s) added');
+    } catch (e) {
+      log('Error adding members: $e');
+      Get.snackbar('Error', 'Failed to add members');
+    }
+  }
+
+  Widget _buildMemberSelectionDialog(List<ProfileModel> users) {
+    final selectedUsers = <ProfileModel>[].obs;
+
+    return AlertDialog(
+      backgroundColor: const Color(0xFF2C3E50),
+      title: const Text('Add Members', style: TextStyle(color: Colors.white)),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: Obx(
+          () => ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              final isSelected = selectedUsers.contains(user);
+
+              return CheckboxListTile(
+                value: isSelected,
+                onChanged: (value) {
+                  if (value == true) {
+                    selectedUsers.add(user);
+                  } else {
+                    selectedUsers.remove(user);
+                  }
+                },
+                title: Text(
+                  user.displayName,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                secondary: CircleAvatar(
+                  backgroundColor: const Color(0xFFFFC107),
+                  backgroundImage: user.avatarUrl != null
+                      ? NetworkImage(user.avatarUrl!)
+                      : null,
+                  child: user.avatarUrl == null
+                      ? Text(
+                          user.initials,
+                          style: const TextStyle(color: Colors.black),
+                        )
+                      : null,
+                ),
+                activeColor: const Color(0xFFFFC107),
+                checkColor: Colors.black,
+              );
+            },
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Get.back(result: selectedUsers.toList()),
+          child: const Text('Add'),
+        ),
+      ],
+    );
+  }
+
   int get completedSubtasks => subtasks.where((s) => s.isCompleted).length;
   int get totalSubtasks => subtasks.length;
 }

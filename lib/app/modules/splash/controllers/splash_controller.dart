@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../../../services/supabase_service.dart';
 import '../../../services/storage_service.dart';
+import '../../../services/realtime_service.dart';
 import '../../../routes/app_pages.dart';
 
 class SplashController extends GetxController {
@@ -29,6 +30,9 @@ class SplashController extends GetxController {
       _storageService = await Get.putAsync(() => StorageService().init());
 
       _supabaseService = await Get.putAsync(() => SupabaseService().init());
+
+      // Initialize RealtimeService after Supabase is ready
+      Get.put(RealtimeService());
 
       _isFirstTime = _storageService.isFirstTime;
 

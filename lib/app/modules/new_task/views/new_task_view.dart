@@ -13,10 +13,6 @@ class NewTaskView extends GetView<NewTaskController> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Get.theme.colorScheme.onSurface),
-          onPressed: () => Get.back(),
-        ),
         title: Text(
           'Create New Task',
           style: TextStyle(
@@ -24,7 +20,7 @@ class NewTaskView extends GetView<NewTaskController> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        centerTitle: true,
+        // centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

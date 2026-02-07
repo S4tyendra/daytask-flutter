@@ -1,23 +1,24 @@
 import 'package:get/get.dart';
+import '../../../services/realtime_service.dart';
+import '../../../data/models/notification_model.dart';
 
 class NotificationsController extends GetxController {
-  //TODO: Implement NotificationsController
+  final RealtimeService _realtimeService = Get.find<RealtimeService>();
 
-  final count = 0.obs;
-  @override
-  void onInit() {
-    super.onInit();
+  RxList<NotificationModel> get notifications => _realtimeService.notifications;
+  RxInt get unreadCount => _realtimeService.unreadNotificationCount;
+
+  List<NotificationModel> get newNotifications =>
+      notifications.where((n) => !n.isRead).toList();
+
+  List<NotificationModel> get earlierNotifications =>
+      notifications.where((n) => n.isRead).toList();
+
+  Future<void> markAsRead(String notificationId) async {
+    await _realtimeService.markNotificationAsRead(notificationId);
   }
 
-  @override
-  void onReady() {
-    super.onReady();
+  Future<void> markAllAsRead() async {
+    await _realtimeService.markAllNotificationsAsRead();
   }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
-
-  void increment() => count.value++;
 }

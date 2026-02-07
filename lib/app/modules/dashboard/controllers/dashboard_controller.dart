@@ -7,10 +7,42 @@ class DashboardController extends GetxController {
   final TaskService _taskService = Get.put(TaskService());
   final SupabaseService _supabaseService = Get.find<SupabaseService>();
 
-  final completedTasks = <TaskModel>[].obs;
-  final ongoingTasks = <TaskModel>[].obs;
+  final _allCompletedTasks = <TaskModel>[].obs;
+  final _allOngoingTasks = <TaskModel>[].obs;
   final isLoading = true.obs;
   final searchQuery = ''.obs;
+
+  List<TaskModel> get completedTasks {
+    if (searchQuery.value.isEmpty) return _allCompletedTasks;
+    return _allCompletedTasks
+        .where(
+          (task) =>
+              task.title.toLowerCase().contains(
+                searchQuery.value.toLowerCase(),
+              ) ||
+              (task.description?.toLowerCase().contains(
+                    searchQuery.value.toLowerCase(),
+                  ) ??
+                  false),
+        )
+        .toList();
+  }
+
+  List<TaskModel> get ongoingTasks {
+    if (searchQuery.value.isEmpty) return _allOngoingTasks;
+    return _allOngoingTasks
+        .where(
+          (task) =>
+              task.title.toLowerCase().contains(
+                searchQuery.value.toLowerCase(),
+              ) ||
+              (task.description?.toLowerCase().contains(
+                    searchQuery.value.toLowerCase(),
+                  ) ??
+                  false),
+        )
+        .toList();
+  }
 
   ProfileModel? get currentUserProfile {
     final user = _supabaseService.currentUser;
@@ -28,13 +60,22 @@ class DashboardController extends GetxController {
     fetchTasks();
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    // Refresh when returning to dashboard
+    ever(searchQuery, (_) {
+      // Trigger rebuild when search changes
+    });
+  }
+
   Future<void> fetchTasks() async {
     try {
       isLoading.value = true;
       final completed = await _taskService.fetchCompletedTasks();
       final ongoing = await _taskService.fetchOngoingTasks();
-      completedTasks.assignAll(completed);
-      ongoingTasks.assignAll(ongoing);
+      _allCompletedTasks.assignAll(completed);
+      _allOngoingTasks.assignAll(ongoing);
     } catch (e) {
       Get.snackbar('Error', 'Failed to fetch tasks: $e');
     } finally {

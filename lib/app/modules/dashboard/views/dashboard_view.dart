@@ -185,8 +185,11 @@ class DashboardView extends GetView<DashboardController> {
     final isYellow = color == Get.theme.colorScheme.primary;
 
     return GestureDetector(
-      onTap: () =>
-          Get.toNamed(Routes.TASK_DETAILS, arguments: {'taskId': task.id}),
+      onTap: () async {
+        await Get.toNamed(Routes.TASK_DETAILS, arguments: {'taskId': task.id});
+        // Refresh dashboard when returning
+        controller.refreshTasks();
+      },
       child: Container(
         width: 180,
         margin: const EdgeInsets.only(right: 16),
@@ -329,8 +332,11 @@ class DashboardView extends GetView<DashboardController> {
 
   Widget _buildOngoingTaskCard(TaskModel task) {
     return GestureDetector(
-      onTap: () =>
-          Get.toNamed(Routes.TASK_DETAILS, arguments: {'taskId': task.id}),
+      onTap: () async {
+        await Get.toNamed(Routes.TASK_DETAILS, arguments: {'taskId': task.id});
+        // Refresh dashboard when returning
+        controller.refreshTasks();
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(20),

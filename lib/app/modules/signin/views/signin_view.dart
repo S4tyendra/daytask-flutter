@@ -77,10 +77,10 @@ class SigninView extends GetView<SigninController> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {}, // Add Forgot Password logic
+                  onPressed: controller.resetPassword,
                   child: const Text(
                     "Forgot Password?",
-                    style: TextStyle(color: Color(0xFF8CAAB9)),
+                    style: TextStyle(color: Color(0xFFFED36A)),
                   ),
                 ),
               ),

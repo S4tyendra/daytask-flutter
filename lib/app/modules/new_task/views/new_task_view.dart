@@ -48,6 +48,10 @@ class NewTaskView extends GetView<NewTaskController> {
             const SizedBox(height: 12),
             _buildTeamMembersSection(context),
             const SizedBox(height: 24),
+            _buildSectionTitle('Subtasks (Optional)'),
+            const SizedBox(height: 12),
+            _buildSubtasksSection(),
+            const SizedBox(height: 24),
             _buildSectionTitle('Time & Date'),
             const SizedBox(height: 12),
             _buildDateTimeSection(context),
@@ -271,6 +275,77 @@ class NewTaskView extends GetView<NewTaskController> {
         ),
       ),
       isScrollControlled: true,
+    );
+  }
+
+  Widget _buildSubtasksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Input field for new subtask
+        TextField(
+          controller: controller.newSubtaskController,
+          decoration: InputDecoration(
+            hintText: 'Add a subtask...',
+            suffixIcon: IconButton(
+              icon: Icon(Icons.add, color: Get.theme.colorScheme.primary),
+              onPressed: controller.addSubtask,
+            ),
+          ),
+          onSubmitted: (_) => controller.addSubtask(),
+        ),
+        const SizedBox(height: 12),
+        // List of added subtasks
+        Obx(() {
+          if (controller.subtasks.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Column(
+            children: controller.subtasks.asMap().entries.map((entry) {
+              final index = entry.key;
+              final subtask = entry.value;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Get.theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      color: Get.theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        subtask,
+                        style: TextStyle(
+                          color: Get.theme.colorScheme.onSurface,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: Get.theme.colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: () => controller.removeSubtask(index),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          );
+        }),
+      ],
     );
   }
 

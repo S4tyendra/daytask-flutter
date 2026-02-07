@@ -35,6 +35,58 @@ class TaskDetailsView extends GetView<TaskDetailsController> {
               onPressed: controller.toggleEdit,
             ),
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            color: const Color(0xFF34495E),
+            onSelected: (value) {
+              switch (value) {
+                case 'delete':
+                  controller.deleteTask();
+                  break;
+                case 'update_date':
+                  controller.updateDueDate();
+                  break;
+                case 'add_members':
+                  controller.showAddMembersDialog();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'update_date',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: Color(0xFFFFC107)),
+                    SizedBox(width: 12),
+                    Text(
+                      'Update Date & Time',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'add_members',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_add, color: Color(0xFFFFC107)),
+                    SizedBox(width: 12),
+                    Text('Add Members', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.red),
+                    SizedBox(width: 12),
+                    Text('Delete Task', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Obx(() {

@@ -1,19 +1,25 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:day_task/app/data/models/task_model.dart';
 import 'package:day_task/app/data/services/task_service.dart';
 import 'package:day_task/app/modules/home/controllers/home_controller.dart';
 
 class NewTaskController extends GetxController {
   final TaskService _taskService = Get.find<TaskService>();
+  final SupabaseClient _client = Supabase.instance.client;
 
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
+  final newSubtaskController = TextEditingController();
 
   final selectedMembers = <ProfileModel>[].obs;
   final allUsers = <ProfileModel>[].obs;
   final filteredUsers = <ProfileModel>[].obs;
   final searchQuery = ''.obs;
+
+  final subtasks = <String>[].obs; // List of subtask titles
 
   final selectedDate = Rxn<DateTime>();
   final selectedTime = Rxn<TimeOfDay>();
@@ -36,6 +42,7 @@ class NewTaskController extends GetxController {
   void onClose() {
     titleController.dispose();
     descriptionController.dispose();
+    newSubtaskController.dispose();
     super.onClose();
   }
 
@@ -78,6 +85,16 @@ class NewTaskController extends GetxController {
     selectedMembers.removeWhere((m) => m.id == user.id);
   }
 
+  void addSubtask() {
+    if (newSubtaskController.text.trim().isEmpty) return;
+    subtasks.add(newSubtaskController.text.trim());
+    newSubtaskController.clear();
+  }
+
+  void removeSubtask(int index) {
+    subtasks.removeAt(index);
+  }
+
   Future<void> pickDate(BuildContext context) async {
     final date = await showDatePicker(
       context: context,
@@ -115,6 +132,8 @@ class NewTaskController extends GetxController {
 
     try {
       isLoading.value = true;
+
+      // Create the task
       final task = await _taskService.createTask(
         title: titleController.text.trim(),
         description: descriptionController.text.trim().isEmpty
@@ -125,10 +144,25 @@ class NewTaskController extends GetxController {
       );
 
       if (task != null) {
+        // Create subtasks if any
+        if (subtasks.isNotEmpty) {
+          for (var subtaskTitle in subtasks) {
+            try {
+              await _client.from('subtasks').insert({
+                'task_id': task.id,
+                'title': subtaskTitle,
+              });
+            } catch (e) {
+              log('Error creating subtask: $e');
+            }
+          }
+        }
+
         // Clear form
         titleController.clear();
         descriptionController.clear();
         selectedMembers.clear();
+        subtasks.clear();
         selectedDate.value = null;
         selectedTime.value = null;
 

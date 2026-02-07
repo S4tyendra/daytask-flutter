@@ -90,6 +90,33 @@ class SignupView extends GetView<SignupController> {
 
               const SizedBox(height: 20),
 
+              const Text(
+                "Confirm Password",
+                style: TextStyle(color: Color(0xFF8CAAB9)),
+              ),
+              const SizedBox(height: 8),
+              Obx(
+                () => TextField(
+                  controller: controller.confirmPasswordController,
+                  obscureText: !controller.isConfirmPasswordVisible.value,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    hintText: "••••••••",
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        controller.isConfirmPasswordVisible.value
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                        color: const Color(0xFF8CAAB9),
+                      ),
+                      onPressed: controller.toggleConfirmPasswordVisibility,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
               Obx(
                 () => Row(
                   children: [
@@ -171,37 +198,6 @@ class SignupView extends GetView<SignupController> {
 
               const SizedBox(height: 30),
 
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: Get.isDarkMode
-                          ? Get.theme.primaryColorLight
-                          : Get.theme.primaryColorDark,
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
-                    foregroundColor: Get.isDarkMode
-                        ? Get.theme.primaryColorLight
-                        : Get.theme.primaryColorDark,
-                  ),
-                  onPressed: controller.googleLogin,
-                  icon: Icon(
-                    Icons.g_mobiledata,
-                    size: 30,
-                    color: Get.theme.primaryColorDark,
-                  ),
-                  label: const Text(
-                    "Google",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

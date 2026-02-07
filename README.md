@@ -161,7 +161,7 @@ lib/
 
 ### Step 1: Clone the Repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/S4tyendra/daytask-flutter.git
 cd day_task
 ```
 
@@ -375,7 +375,7 @@ This project is created for educational purposes as part of a Flutter internship
 **Satyendra**  
 📧 Email: satya@satyendra.in  
 🔗 GitHub: [@s4tyendra](https://github.com/s4tyendra)  
-💼 LinkedIn: [Your Name](https://linkedin.com/in/s4tyendra)
+💼 LinkedIn: [/in/s4tyendra](https://linkedin.com/in/s4tyendra)
 
 ---
 

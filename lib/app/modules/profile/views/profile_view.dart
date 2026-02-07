@@ -9,21 +9,22 @@ class ProfileView extends GetView<ProfileController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2C3E50),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2C3E50),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Get.back(),
         ),
-        title: const Text(
+        title: Text(
           'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
       body: Obx(() {
@@ -34,20 +35,24 @@ class ProfileView extends GetView<ProfileController> {
         }
 
         final profile = controller.profile.value;
+        // Ensure profile is loaded before building UI that depends on it
+        if (profile == null && !controller.isLoading.value) {
+          return const Center(child: Text("Profile not found"));
+        }
 
         return SingleChildScrollView(
           child: Column(
             children: [
               const SizedBox(height: 32),
-              _buildProfileAvatar(profile),
+              _buildProfileAvatar(context, profile),
               const SizedBox(height: 32),
-              _buildProfileInfo(profile),
+              _buildProfileInfo(context, profile!),
               const SizedBox(height: 24),
-              _buildTaskStats(),
+              _buildTaskStats(context),
               const SizedBox(height: 24),
-              _buildMenuItems(),
+              _buildMenuItems(context),
               const SizedBox(height: 24),
-              _buildLogoutButton(),
+              _buildLogoutButton(context),
               const SizedBox(height: 32),
             ],
           ),
@@ -56,7 +61,7 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildProfileAvatar(profile) {
+  Widget _buildProfileAvatar(BuildContext context, profile) {
     return Stack(
       children: [
         Container(
@@ -68,15 +73,15 @@ class ProfileView extends GetView<ProfileController> {
           ),
           child: CircleAvatar(
             radius: 58,
-            backgroundColor: const Color(0xFF34495E),
+            backgroundColor: Theme.of(context).cardColor,
             backgroundImage: profile?.avatarUrl != null
                 ? NetworkImage(profile!.avatarUrl!)
                 : null,
             child: profile?.avatarUrl == null
                 ? Text(
                     profile?.initials ?? '?',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                       fontSize: 40,
                       fontWeight: FontWeight.bold,
                     ),
@@ -101,17 +106,19 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildProfileInfo(profile) {
+  Widget _buildProfileInfo(BuildContext context, profile) {
     return Column(
       children: [
         _buildInfoCard(
+          context,
           icon: Icons.person,
           label: profile?.displayName ?? 'Unknown User',
         ),
         const SizedBox(height: 12),
-        _buildInfoCard(icon: Icons.email, label: controller.userEmail),
+        _buildInfoCard(context, icon: Icons.email, label: controller.userEmail),
         const SizedBox(height: 12),
         _buildInfoCard(
+          context,
           icon: Icons.lock,
           label: 'Password',
           trailing: Icons.edit,
@@ -120,7 +127,8 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildInfoCard({
+  Widget _buildInfoCard(
+    BuildContext context, {
     required IconData icon,
     required String label,
     IconData? trailing,
@@ -129,48 +137,73 @@ class ProfileView extends GetView<ProfileController> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF34495E),
+        color: Theme.of(
+          context,
+        ).cardColor, // Use cardColor instead of hardcoded
         borderRadius: BorderRadius.circular(0),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white.withOpacity(0.7), size: 24),
+          Icon(
+            icon,
+            color: Theme.of(context).iconTheme.color?.withOpacity(0.7),
+            size: 24,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontSize: 16),
             ),
           ),
           if (trailing != null)
-            Icon(trailing, color: Colors.white.withOpacity(0.7), size: 20),
+            Icon(
+              trailing,
+              color: Theme.of(context).iconTheme.color?.withOpacity(0.7),
+              size: 20,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildTaskStats() {
+  Widget _buildTaskStats(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF34495E),
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(0),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Obx(() => _buildStatItem('Total', controller.totalTasks)),
-          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.2)),
-          Obx(() => _buildStatItem('Completed', controller.completedTasks)),
-          Container(width: 1, height: 40, color: Colors.white.withOpacity(0.2)),
-          Obx(() => _buildStatItem('Pending', controller.pendingTasks)),
+          Obx(() => _buildStatItem(context, 'Total', controller.totalTasks)),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).dividerColor,
+          ),
+          Obx(
+            () =>
+                _buildStatItem(context, 'Completed', controller.completedTasks),
+          ),
+          Container(
+            width: 1,
+            height: 40,
+            color: Theme.of(context).dividerColor,
+          ),
+          Obx(
+            () => _buildStatItem(context, 'Pending', controller.pendingTasks),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String label, int value) {
+  Widget _buildStatItem(BuildContext context, String label, int value) {
     return Column(
       children: [
         Text(
@@ -184,26 +217,30 @@ class ProfileView extends GetView<ProfileController> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 14),
         ),
       ],
     );
   }
 
-  Widget _buildMenuItems() {
+  Widget _buildMenuItems(BuildContext context) {
     return Column(
       children: [
         _buildMenuItem(
+          context,
           icon: Icons.list_alt,
           label: 'My Tasks',
           onTap: () => Get.toNamed(Routes.TASK_LIST),
         ),
+        _buildThemeToggle(context), // Added Toggle
         _buildMenuItem(
+          context,
           icon: Icons.privacy_tip,
           label: 'Privacy',
           trailing: Icons.keyboard_arrow_down,
         ),
         _buildMenuItem(
+          context,
           icon: Icons.settings,
           label: 'Setting',
           trailing: Icons.keyboard_arrow_down,
@@ -212,7 +249,47 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildThemeToggle(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ), // Adjusted padding for switch
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(0),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.brightness_6,
+            color: Theme.of(context).iconTheme.color?.withOpacity(0.7),
+            size: 24,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'Dark Mode',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontSize: 16),
+            ),
+          ),
+          Obx(
+            () => Switch(
+              value: controller.isDarkMode.value,
+              onChanged: (val) => controller.toggleTheme(),
+              activeColor: const Color(0xFFFFC107),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+    BuildContext context, {
     required IconData icon,
     required String label,
     IconData? trailing,
@@ -224,28 +301,38 @@ class ProfileView extends GetView<ProfileController> {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF34495E),
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(0),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white.withOpacity(0.7), size: 24),
+            Icon(
+              icon,
+              color: Theme.of(context).iconTheme.color?.withOpacity(0.7),
+              size: 24,
+            ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontSize: 16),
               ),
             ),
             if (trailing != null)
-              Icon(trailing, color: Colors.white.withOpacity(0.7), size: 20),
+              Icon(
+                trailing,
+                color: Theme.of(context).iconTheme.color?.withOpacity(0.7),
+                size: 20,
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(BuildContext context) {
     return GestureDetector(
       onTap: controller.logout,
       child: Container(

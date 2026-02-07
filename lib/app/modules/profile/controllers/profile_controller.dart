@@ -5,19 +5,35 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/task_model.dart';
 import '../../../services/supabase_service.dart';
 
+import 'package:get_storage/get_storage.dart';
+
 class ProfileController extends GetxController {
   final SupabaseClient _client = Supabase.instance.client;
   final SupabaseService _supabaseService = Get.find<SupabaseService>();
+  final _box = GetStorage();
 
   final Rx<ProfileModel?> profile = Rx<ProfileModel?>(null);
   final RxList<TaskModel> myTasks = <TaskModel>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool isDarkMode = true.obs;
 
   @override
   void onInit() {
     super.onInit();
+    isDarkMode.value = _box.read('isDarkMode') ?? true;
+    _updateTheme();
     loadProfile();
     loadMyTasks();
+  }
+
+  void toggleTheme() {
+    isDarkMode.value = !isDarkMode.value;
+    _box.write('isDarkMode', isDarkMode.value);
+    _updateTheme();
+  }
+
+  void _updateTheme() {
+    Get.changeThemeMode(isDarkMode.value ? ThemeMode.dark : ThemeMode.light);
   }
 
   Future<void> loadProfile() async {

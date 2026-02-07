@@ -15,7 +15,9 @@ class ChatController extends GetxController
   // Direct Messages
   final RxList<ProfileModel> directMessageUsers = <ProfileModel>[].obs;
   final RxList<ProfileModel> allUsers = <ProfileModel>[].obs;
+  final RxList<ProfileModel> filteredUsers = <ProfileModel>[].obs;
   final RxBool isLoadingUsers = false.obs;
+  final RxString searchQuery = ''.obs;
 
   // Groups (Tasks)
   final RxList<TaskModel> taskGroups = <TaskModel>[].obs;
@@ -30,6 +32,13 @@ class ChatController extends GetxController
     });
     loadDirectMessageUsers();
     loadTaskGroups();
+
+    // Listen to search query changes
+    debounce(
+      searchQuery,
+      (_) => filterUsers(),
+      time: const Duration(milliseconds: 300),
+    );
   }
 
   @override
@@ -86,9 +95,26 @@ class ChatController extends GetxController
       allUsers.value = (response as List)
           .map((json) => ProfileModel.fromJson(json))
           .toList();
+
+      // Initialize filtered users
+      filteredUsers.value = allUsers;
     } catch (e) {
       log('Error loading all users: $e');
       Get.snackbar('Error', 'Failed to load users');
+    }
+  }
+
+  void filterUsers() {
+    if (searchQuery.value.isEmpty) {
+      filteredUsers.value = allUsers;
+    } else {
+      filteredUsers.value = allUsers
+          .where(
+            (user) => user.displayName.toLowerCase().contains(
+              searchQuery.value.toLowerCase(),
+            ),
+          )
+          .toList();
     }
   }
 
@@ -128,13 +154,14 @@ class ChatController extends GetxController
 
   void openTaskChat(TaskModel task) {
     Get.toNamed(
-      '/chat',
+      '/messages',
       arguments: {'taskId': task.id, 'taskTitle': task.title},
     );
   }
 
   void showAddDirectMessageDialog() async {
     isLoadingUsers.value = true;
+    searchQuery.value = ''; // Reset search
     await loadAllUsers();
     isLoadingUsers.value = false;
     Get.bottomSheet(
@@ -168,22 +195,65 @@ class ChatController extends GetxController
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // Search bar
+          TextField(
+            onChanged: (value) => searchQuery.value = value,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Search users...',
+              hintStyle: const TextStyle(color: Colors.white54),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFFFFC107)),
+              filled: true,
+              fillColor: const Color(0xFF34495E),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
           Expanded(
             child: Obx(() {
-              if (allUsers.isEmpty) {
+              if (isLoadingUsers.value) {
                 return const Center(
-                  child: Text(
-                    'No users found',
-                    style: TextStyle(color: Colors.white70),
+                  child: CircularProgressIndicator(color: Color(0xFFFFC107)),
+                );
+              }
+
+              if (filteredUsers.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.person_search,
+                        size: 64,
+                        color: Colors.white24,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        searchQuery.value.isEmpty
+                            ? 'No users found'
+                            : 'No users match "${searchQuery.value}"',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
                   ),
                 );
               }
 
               return ListView.builder(
-                itemCount: allUsers.length,
+                itemCount: filteredUsers.length,
                 itemBuilder: (context, index) {
-                  final user = allUsers[index];
+                  final user = filteredUsers[index];
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: const Color(0xFFFFC107),

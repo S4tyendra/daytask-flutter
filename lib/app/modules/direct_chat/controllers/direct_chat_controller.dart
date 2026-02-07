@@ -2,12 +2,12 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../data/models/message_model.dart';
+import '../../../data/models/direct_message_model.dart';
 
 class DirectChatController extends GetxController {
   final SupabaseClient _client = Supabase.instance.client;
 
-  final RxList<MessageModel> messages = <MessageModel>[].obs;
+  final RxList<DirectMessageModel> messages = <DirectMessageModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxBool isSending = false.obs;
 
@@ -27,6 +27,7 @@ class DirectChatController extends GetxController {
 
     if (otherUserId != null) {
       loadMessages();
+      _subscribeToRealtime();
     }
   }
 
@@ -34,7 +35,34 @@ class DirectChatController extends GetxController {
   void onClose() {
     messageController.dispose();
     scrollController.dispose();
+    _client.channel('public:direct_messages').unsubscribe();
     super.onClose();
+  }
+
+  void _subscribeToRealtime() {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    _client
+        .channel('public:direct_messages')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'direct_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'receiver_id',
+            value: userId,
+          ),
+          callback: (payload) {
+            if (payload.newRecord['sender_id'] == otherUserId) {
+              final newMessage = DirectMessageModel.fromJson(payload.newRecord);
+              messages.add(newMessage);
+              _scrollToBottom();
+            }
+          },
+        )
+        .subscribe();
   }
 
   Future<void> loadMessages() async {
@@ -52,7 +80,7 @@ class DirectChatController extends GetxController {
           .order('created_at', ascending: true);
 
       messages.value = (response as List)
-          .map((json) => MessageModel.fromJson(json))
+          .map((json) => DirectMessageModel.fromJson(json))
           .toList();
 
       _scrollToBottom();
@@ -67,25 +95,49 @@ class DirectChatController extends GetxController {
   Future<void> sendMessage() async {
     if (messageController.text.trim().isEmpty || otherUserId == null) return;
 
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final content = messageController.text.trim();
+    messageController.clear();
+
+    // Optimistic update
+    final optimisticId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    final optimisticMessage = DirectMessageModel(
+      id: optimisticId,
+      senderId: userId,
+      receiverId: otherUserId!,
+      content: content,
+      createdAt: DateTime.now(),
+    );
+
     try {
       isSending.value = true;
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) return;
-
-      final content = messageController.text.trim();
-      messageController.clear();
-
-      await _client.from('direct_messages').insert({
-        'sender_id': userId,
-        'receiver_id': otherUserId,
-        'content': content,
-      });
-
-      await loadMessages();
+      messages.add(optimisticMessage);
       _scrollToBottom();
+
+      final response = await _client
+          .from('direct_messages')
+          .insert({
+            'sender_id': userId,
+            'receiver_id': otherUserId,
+            'content': content,
+          })
+          .select()
+          .single();
+
+      // Update the optimistic message with real data
+      // Note: response might not have 'sender' relation, so we keep using optimistic info if needed
+      // but strictly we should replace it with the server response
+      final index = messages.indexWhere((m) => m.id == optimisticId);
+      if (index != -1) {
+        messages[index] = DirectMessageModel.fromJson(response);
+      }
     } catch (e) {
       log('Error sending message: $e');
       Get.snackbar('Error', 'Failed to send message');
+      // Remove optimistic message on failure
+      messages.removeWhere((m) => m.id == optimisticId);
     } finally {
       isSending.value = false;
     }
@@ -103,7 +155,7 @@ class DirectChatController extends GetxController {
     }
   }
 
-  bool isMyMessage(MessageModel message) {
+  bool isMyMessage(DirectMessageModel message) {
     return message.senderId == _client.auth.currentUser?.id;
   }
 }

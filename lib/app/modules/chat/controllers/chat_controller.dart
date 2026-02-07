@@ -134,7 +134,9 @@ class ChatController extends GetxController
   }
 
   void showAddDirectMessageDialog() async {
+    isLoadingUsers.value = true;
     await loadAllUsers();
+    isLoadingUsers.value = false;
     Get.bottomSheet(
       _buildUserSelectionSheet(),
       backgroundColor: const Color(0xFF2C3E50),

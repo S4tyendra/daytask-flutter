@@ -41,7 +41,7 @@ class ChatView extends GetView<ChatController> {
             backgroundColor: const Color(0xFFFFC107),
             onPressed: () {
               controller.showAddDirectMessageDialog();
-              _showUserSelectionSheet();
+              // _showUserSelectionSheet();
             },
             child: const Icon(Icons.add, color: Colors.black),
           );
